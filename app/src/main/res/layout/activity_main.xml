@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.example.dell.imeidemo.MainActivity">
+
+    <EditText
+        android:id="@+id/inputDid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="请输入设备号："/>
+
+    <Button
+        android:id="@+id/sendRequestBt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="发送请求"/>
+    <Button
+        android:id="@+id/startQueryActivity"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="打开查询界面"/>
+    <Button
+        android:id="@+id/startGetStatusActivity"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="打开获取设备状态界面"/>
+
+    <TextView
+        android:id="@+id/responseMsg"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="暂无返回数据"/>
+
+</LinearLayout>
