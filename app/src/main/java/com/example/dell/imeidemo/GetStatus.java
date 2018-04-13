@@ -9,6 +9,9 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 
 import okhttp3.Call;
@@ -17,20 +20,22 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import static com.example.dell.imeidemo.Util.SomeUtils.coverDid;
+
 public class GetStatus extends AppCompatActivity {
 
     EditText inputEt;
     Button getStatusBt;
     TextView responseTxv;
 
-    String did="";//设备号
+    String did = "";//设备号
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_get_status);
 
         did = getIntent().getStringExtra("did");
-        Log.i("did内容",did);
+
         initView();
     }
 
@@ -39,16 +44,13 @@ public class GetStatus extends AppCompatActivity {
         getStatusBt = findViewById(R.id.getStatusBt);
         responseTxv = findViewById(R.id.responseTxv);
 
-        if (did.equals("")){
-            //无内容，不做操作
-        }else {
-            inputEt.setText(did);
-        }
+        inputEt.setText(did);
 
         getStatusBt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sendGet(inputEt.getText().toString());
+                //将输入框的数字作为设备号向服务器发送请求，并补上适当数量的0
+                sendGet(coverDid(inputEt.getText().toString()));
             }
         });
     }
@@ -75,10 +77,22 @@ public class GetStatus extends AppCompatActivity {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 final String responseMsg = response.body().string();
+                final StringBuffer sb = new StringBuffer();
+                try {
+                    JSONObject jsonObject = new JSONObject(responseMsg);
+                    JSONObject object = new JSONObject(jsonObject.getString("content"));
+                    sb.append("返回码：" + jsonObject.getInt("errcode") + "\n");
+                    sb.append("返回状态：" + jsonObject.getString("errmsg") + "\n");
+                    sb.append("设备号：" + object.getString("did") + "\n");
+                    sb.append("是否在线：" + object.getString("online") + "\n");
+                    sb.append("更新时间：" + object.getString("updatetime") + "\n");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        responseTxv.setText(responseMsg);
+                        responseTxv.setText(sb.toString());
                     }
                 });
             }

@@ -9,6 +9,10 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 
 import okhttp3.Call;
@@ -28,7 +32,7 @@ public class QueryIMEI extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_query_imei);
         uid = getIntent().getStringExtra("uid");
-        Log.i("uid内容",uid);
+
         initView();
     }
 
@@ -37,11 +41,7 @@ public class QueryIMEI extends AppCompatActivity {
         queryBt = findViewById(R.id.queryBt);
         responseTv = findViewById(R.id.responseTxv);
 
-        if (uid.equals("")){
-            //无内容，不做操作
-        }else {
-            inputEt.setText(uid);
-        }
+        inputEt.setText(uid);
 
         queryBt.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -73,10 +73,40 @@ public class QueryIMEI extends AppCompatActivity {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 final String responseMsg = response.body().string();
+                final StringBuffer sb = new StringBuffer();
+                try {
+                    JSONObject jsonObject = new JSONObject(responseMsg);
+                    int errcode = jsonObject.getInt("errcode");
+                    String errmsg = jsonObject.getString("errmsg");
+                    sb.append("返回码：" + errcode + "\n");
+                    sb.append("返回状态：" + errmsg + "\n");
+                    if (0 == errcode){
+                        JSONObject object = new JSONObject(jsonObject.getString("content"));
+                        String command = object.getString("command");
+                        String datetime = object.getString("datetime");
+                        String uid = object.getString("uid");
+                        sb.append("动作：" + command + "\n");
+                        sb.append("写入日期：" + datetime + "\n");
+                        sb.append("唯一ID：" + uid + "\n");
+                        if (object.has("imei")){
+                            //如果有IMEI字段
+                            String imei = object.getString("imei");
+                            sb.append("设备号：" + imei);
+                        }else {
+                            //否则是IMEI集合
+                            JSONArray array = object.getJSONArray("imei_list");
+                            for (int i=1;i<=array.length();i++){
+                                sb.append("设备号" + i + "：" + array.get(i-1) + "\n");
+                            }
+                        }
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        responseTv.setText(responseMsg);
+                        responseTv.setText(sb.toString());
                     }
                 });
             }
