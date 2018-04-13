@@ -1,6 +1,7 @@
 package com.example.dell.imeidemo;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -37,16 +38,20 @@ public class MainActivity extends CheckPermissionsActivity {
     EditText inputEt;
     TextView responseTxv;
     Button sendBt, queryIMEI, getStatus;
+    private ProgressDialog progressDialog;
 
     String mDid = "";//设备号
     String mUid = "";//唯一ID
-    String textIMEI = "";/**测试用IMEI*/
+    //String textIMEI = "";/**测试用IMEI*/
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        initView();
+
+        initView();//初始化组件
+        //先检查IMEI是否过期
+        appAuth(getIMEI());
     }
 
     private void initView() {
@@ -56,12 +61,14 @@ public class MainActivity extends CheckPermissionsActivity {
         queryIMEI = findViewById(R.id.startQueryActivity);
         getStatus = findViewById(R.id.startGetStatusActivity);
 
+        //初始化加载框
+        buildProgressDialog();
         /**测试用*/
-        textIMEI = getIMEI();
-        if (textIMEI == null || textIMEI.equals("000000000000000")){
-            textIMEI = "357710061152818";
-        }
-        inputEt.setText(textIMEI);
+//        textIMEI = getIMEI();
+//        if (textIMEI == null || textIMEI.equals("000000000000000")){
+//            textIMEI = "357710061152818";
+//        }
+        inputEt.setText(getIMEI());
         //responseTxv.setText(textIMEI);
         sendBt.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -89,8 +96,6 @@ public class MainActivity extends CheckPermissionsActivity {
                 startGetStatus();
             }
         });
-
-        appAuth(inputEt.getText().toString().trim());
     }
 
     private void sendGet(String did) {
@@ -202,6 +207,8 @@ public class MainActivity extends CheckPermissionsActivity {
      * 需要传过去did
      * */
     private void appAuth(String did){
+        //先弹出加载框，准备异步请求数据
+        progressDialog.show();
         final String requestUrl = "http://www.duoyue.net/weixin/api/appAuth?did=" + did;
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
@@ -215,6 +222,7 @@ public class MainActivity extends CheckPermissionsActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        cancelProgressDialog();//取消加载框
                         Toast.makeText(MainActivity.this,
                                 "无法连接服务器",Toast.LENGTH_SHORT).show();
                     }
@@ -231,11 +239,11 @@ public class MainActivity extends CheckPermissionsActivity {
                     if (0 == errCode){
                         final AppAuthBean appAuthBean =
                                 new Gson().fromJson(responseMsg,AppAuthBean.class);
-                        Log.i("runOnUiThread方法体外",appAuthBean.toString());
+
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Log.i("runOnUiThread方法体内",appAuthBean.toString());
+                                cancelProgressDialog();//取消加载框
                                 Toast.makeText(MainActivity.this,
                                         "失效日期：" + appAuthBean.getExpire_data(),Toast.LENGTH_SHORT).show();//失效日期
                             }
@@ -244,6 +252,7 @@ public class MainActivity extends CheckPermissionsActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
+                                cancelProgressDialog();//取消加载框
                                 Toast.makeText(MainActivity.this,
                                         "该设备号已失效",Toast.LENGTH_SHORT).show();
                                 MainActivity.this.finish();
@@ -255,5 +264,21 @@ public class MainActivity extends CheckPermissionsActivity {
                 }
             }
         });
+    }
+
+    private void buildProgressDialog(){
+        if (progressDialog == null){
+            progressDialog = new ProgressDialog(MainActivity.this);
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            progressDialog.setMessage("数据加载中");
+            progressDialog.setCancelable(false);
+        }
+    }
+    private void cancelProgressDialog(){
+        if (progressDialog != null){
+            if (progressDialog.isShowing()){
+                progressDialog.dismiss();
+            }
+        }
     }
 }
